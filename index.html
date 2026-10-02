@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b1f3b">
+<meta name="color-scheme" content="dark">
+<title>حسابدار صوتی</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --glass:rgba(10,12,30,.42); --glass2:rgba(255,255,255,.08); --line:rgba(255,255,255,.16);
+  --text:#f6f7ff; --muted:#c3c8e6; --out:#ff8a8a; --in:#7df0b0; --accent:#8ab4ff;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{font-family:"Vazirmatn",Tahoma,system-ui,sans-serif;color:var(--text);background:#14172e;overflow-x:hidden}
+#bg{position:fixed;inset:0;z-index:-3;transition:background .5s}
+#tint{position:fixed;inset:0;z-index:-2;background:rgba(255,70,70,.30);opacity:0;transition:opacity .8s;pointer-events:none}
+body.low #tint{opacity:1}
+.wrap{max-width:720px;margin:0 auto;padding:12px 14px 190px}
+.card{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:12px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.title{font-weight:800;font-size:20px;margin:6px 0 0}
+.title small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
+.clock{direction:ltr;text-align:center;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:18px;padding:8px 14px;min-width:132px}
+.clock .t{font-size:26px;font-weight:800;letter-spacing:1px;font-variant-numeric:tabular-nums;text-shadow:0 0 14px rgba(138,180,255,.6)}
+.clock .d{direction:rtl;font-size:11px;color:var(--muted);margin-top:1px}
+.bal{text-align:center;padding:18px 10px}
+.bal .lbl{color:var(--muted);font-size:13px}
+.bal .num{font-size:38px;font-weight:800;margin:4px 0;line-height:1.3}
+.bal .num small{font-size:15px;font-weight:400;color:var(--muted)}
+.bal .sub{font-size:12px;color:var(--muted)}
+.lowmsg{display:none;margin-top:8px;font-size:12px;background:rgba(255,90,90,.25);border-radius:10px;padding:6px 10px}
+body.low .lowmsg{display:block}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.stat{background:var(--glass2);border-radius:14px;padding:8px 4px;text-align:center}
+.stat b{display:block;font-size:14px;margin-top:2px}
+.stat span{font-size:11px;color:var(--muted)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.pill{flex:1;min-width:76px;border:1px solid var(--line);background:var(--glass);color:var(--text);border-radius:14px;padding:9px 6px;font:inherit;font-size:13px;cursor:pointer;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.pill.on{background:rgba(125,240,176,.25);border-color:rgba(125,240,176,.6)}
+h3{margin:0 0 10px;font-size:15px}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar{display:grid;grid-template-columns:78px 1fr 84px;gap:8px;align-items:center;font-size:12px}
+.bar i{display:block;height:10px;border-radius:6px;min-width:3px}
+.bar span:last-child{text-align:left;color:var(--muted);direction:ltr}
+.searchrow{display:flex;gap:8px;margin-bottom:10px}
+input,select,textarea{font:inherit;color:var(--text);background:rgba(255,255,255,.1);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+select option{color:#111}
+.ib{flex:0 0 46px;border:1px solid var(--line);background:var(--glass2);color:var(--text);border-radius:12px;font-size:18px;cursor:pointer}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:480px}
+th{color:var(--muted);font-weight:600;text-align:right;padding:6px 6px;border-bottom:1px solid var(--line);position:sticky;top:0}
+td{padding:9px 6px;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:middle}
+tr.row{cursor:pointer}
+tr.row:active{background:rgba(255,255,255,.07)}
+.amt{font-weight:700;white-space:nowrap}
+.amt.out{color:var(--out)} .amt.in{color:var(--in)}
+.cat{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;background:rgba(255,255,255,.12)}
+.q{color:#ffd37a}
+.empty{text-align:center;color:var(--muted);padding:22px 0;font-size:13px}
+.pend{display:none;align-items:center;gap:10px;background:rgba(255,211,122,.18);border:1px solid rgba(255,211,122,.5);border-radius:16px;padding:10px 12px;margin-bottom:12px;font-size:13px}
+.pend.show{display:flex}
+.pend div{flex:1}
+.pend button{border:0;border-radius:10px;padding:8px 12px;font:inherit;font-size:12px;cursor:pointer;background:rgba(255,255,255,.18);color:var(--text)}
+/* bottom dock */
+.dock{position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,rgba(8,10,25,.85),rgba(8,10,25,0));pointer-events:none}
+.dock>*{pointer-events:auto}
+.dockin{max-width:720px;margin:0 auto}
+.tr{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:8px 12px;margin-bottom:10px;font-size:13px;min-height:40px}
+.tr .live{color:var(--muted)} .tr .fin{color:var(--text);font-weight:600}
+.ex{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.ex button{border:1px solid var(--line);background:var(--glass2);color:var(--muted);border-radius:20px;padding:3px 10px;font:inherit;font-size:11px;cursor:pointer}
+.row2{display:flex;align-items:center;gap:10px}
+.typed{flex:1}
+.mic{flex:0 0 74px;width:74px;height:74px;border-radius:50%;border:0;font-size:32px;cursor:pointer;color:#fff;background:linear-gradient(145deg,#5b8cff,#8a5bff);box-shadow:0 8px 28px rgba(91,140,255,.55);position:relative;transition:transform .15s}
+.mic:active{transform:scale(.94)}
+.mic.on{background:linear-gradient(145deg,#ff5b6e,#ff8a5b);box-shadow:0 8px 28px rgba(255,91,110,.6);animation:pulse 1.3s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,91,110,.6)}70%{box-shadow:0 0 0 22px rgba(255,91,110,0)}100%{box-shadow:0 0 0 0 rgba(255,91,110,0)}}
+.send{flex:0 0 46px;height:46px}
+/* toast */
+#toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:calc(210px + env(safe-area-inset-bottom,0px));background:rgba(20,22,50,.96);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:92vw;display:flex;gap:10px;align-items:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+#toast button{border:0;background:rgba(138,180,255,.25);color:var(--text);border-radius:8px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}
+/* modal */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(5,6,18,.65);display:none;align-items:flex-end;justify-content:center}
+.modal.show{display:flex}
+.sheet{width:100%;max-width:720px;max-height:88vh;overflow-y:auto;background:rgba(22,25,56,.97);border:1px solid var(--line);border-radius:22px 22px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.sheet h2{margin:0 0 12px;font-size:17px;display:flex;justify-content:space-between;align-items:center}
+.x{border:0;background:var(--glass2);color:var(--text);width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer}
+.bgs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.bgs button{aspect-ratio:3/4;border-radius:12px;border:2px solid transparent;cursor:pointer;color:#fff;font:inherit;font-size:10px;display:flex;align-items:flex-end;justify-content:center;padding:4px}
+.bgs button.sel{border-color:#fff}
+.fld{margin-bottom:10px}
+.fld label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.btn{border:0;border-radius:12px;padding:11px 14px;font:inherit;font-size:14px;cursor:pointer;background:linear-gradient(145deg,#5b8cff,#8a5bff);color:#fff}
+.btn.sec{background:var(--glass2);border:1px solid var(--line)}
+.btn.red{background:rgba(255,91,110,.35)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.btns .btn{flex:1}
+.note{font-size:12px;color:var(--muted);line-height:1.9;background:var(--glass2);border-radius:12px;padding:8px 10px;margin:8px 0}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px}
+.sw input{width:auto;transform:scale(1.4)}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.seg button{border:1px solid var(--line);background:var(--glass2);color:var(--text);border-radius:10px;padding:8px 2px;font:inherit;font-size:12px;cursor:pointer}
+.seg button.sel{background:rgba(138,180,255,.35);border-color:var(--accent)}
+.sum3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+@media print{
+  body{background:#fff;color:#000} #bg,#tint,.dock,.top,.tools,.pend,.card:not(.printable){display:none!important}
+  .modal{position:static;display:block;background:none} .sheet{background:#fff;color:#000;border:0;max-height:none}
+  .btns,.x,.seg{display:none!important} th,td{color:#000}
+}
+</style>
+</head>
+<body>
+<div id="bg"></div><div id="tint"></div>
+
+<div class="wrap">
+  <div class="top">
+    <div class="title">حسابدار صوتی<small>بگو، ثبت می‌شود</small></div>
+    <div class="clock"><div class="t" id="clk">--:--:--</div><div class="d" id="clkd"></div></div>
+  </div>
+
+  <div class="card bal">
+    <div class="lbl">موجودی کل</div>
+    <div class="num" id="bal">۰ <small>تومان</small></div>
+    <div class="sub">موجودی اولیه: <span id="init">۰</span> — <a href="#" id="editInit" style="color:var(--accent)">تغییر</a></div>
+    <div class="lowmsg" id="lowmsg">⚠️ موجودی کمتر از آستانه‌ی هشدار شده است</div>
+    <div class="stats">
+      <div class="stat"><span>هزینه امروز</span><b id="sToday">۰</b></div>
+      <div class="stat"><span>هزینه این ماه</span><b id="sMonthOut">۰</b></div>
+      <div class="stat"><span>درآمد این ماه</span><b id="sMonthIn">۰</b></div>
+    </div>
+  </div>
+
+  <div class="tools">
+    <button class="pill" id="bBg">🎨 پس‌زمینه</button>
+    <button class="pill" id="bSms">📩 پیامک: <span id="smsSt">قطع</span></button>
+    <button class="pill" id="bExp">📤 خروجی</button>
+    <button class="pill" id="bSet">⚙️ تنظیمات</button>
+  </div>
+
+  <div class="pend" id="pend"><div id="pendTxt"></div><button id="pendMic">🎤 بگو</button><button id="pendSkip">بی‌خیال</button></div>
+
+  <div class="card">
+    <h3>هزینه ۷ روز اخیر</h3>
+    <svg id="chart" viewBox="0 0 330 140" width="100%" role="img" aria-label="نمودار هزینه هفت روز اخیر"></svg>
+  </div>
+
+  <div class="card">
+    <h3>هزینه‌ها به تفکیک دسته (این ماه)</h3>
+    <div class="bars" id="cats"></div>
+  </div>
+
+  <div class="card printable">
+    <h3>دفتر حساب</h3>
+    <div class="searchrow">
+      <input id="search" type="search" placeholder="جستجو: شرح، دسته، مبلغ، تاریخ…">
+      <button class="ib" id="searchMic" title="جستجوی صوتی">🎤</button>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>#</th><th>تاریخ</th><th>شرح</th><th>دسته</th><th>مبلغ</th><th>موجودی</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty" style="display:none">هنوز چیزی ثبت نشده. دکمه‌ی میکروفون را بزن و بگو: «ناهار صد و بیست هزار تومان»</div>
+  </div>
+</div>
+
+<div class="dock"><div class="dockin">
+  <div class="tr" id="tr">
+    <div id="trTxt"><span class="live">برای شروع، میکروفون را بزن…</span></div>
+    <div class="ex" id="ex">
+      <button>ناهار صد و بیست هزار تومان</button>
+      <button>حقوق ده میلیون</button>
+      <button>تاکسی ۵۰ هزار و قبض برق ۲۰۰ هزار</button>
+      <button>دیروز بنزین ۳۰۰ هزار</button>
+      <button>آخری رو حذف کن</button>
+    </div>
+  </div>
+  <div class="row2">
+    <input class="typed" id="typed" placeholder="یا اینجا تایپ کن…" autocomplete="off">
+    <button class="ib send" id="send">⬆</button>
+    <button class="mic" id="mic" aria-label="میکروفون">🎤</button>
+  </div>
+</div></div>
+
+<div id="toast"><span id="toastTxt"></span><button id="toastBtn" style="display:none"></button></div>
+
+<!-- Modals -->
+<div class="modal" id="m-bg"><div class="sheet">
+  <h2>انتخاب پس‌زمینه <button class="x" data-close>✕</button></h2>
+  <div class="bgs" id="bgs"></div>
+</div></div>
+
+<div class="modal" id="m-sms"><div class="sheet">
+  <h2>اتصال پیامک بانکی <button class="x" data-close>✕</button></h2>
+  <div class="sw"><span>ثبت خودکار پیامک‌های برداشت و واریز</span><input type="checkbox" id="smsToggle"></div>
+  <div class="note" id="smsNote">
+    وقتی روشن باشد، هر پیامک بانکی که کپی کنی (یا اینجا بچسبانی) خودکار تشخیص داده می‌شود، از موجودی کم/به آن اضافه می‌شود و منتظر می‌ماند تا بگویی «بابت چی بود». اگر نگویی، خالی می‌ماند ولی در محاسبات حساب می‌شود.<br>
+    <b>توجه:</b> مرورگر اجازه‌ی خواندن مستقیم صندوق پیامک را نمی‌دهد؛ برای خواندن کاملاً خودکار، نسخه‌ی بومی اندروید لازم است.
+  </div>
+  <div class="fld"><label>متن پیامک را اینجا بچسبان</label><textarea id="smsText" rows="3" placeholder="مثلاً: برداشت 1,200,000 ریال ... مانده 85,000,000"></textarea></div>
+  <div class="btns"><button class="btn" id="smsAdd">ثبت پیامک</button><button class="btn sec" id="smsPaste">📋 چسباندن از کلیپ‌بورد</button></div>
+</div></div>
+
+<div class="modal" id="m-exp"><div class="sheet">
+  <h2>خروجی گزارش <button class="x" data-close>✕</button></h2>
+  <div class="seg" id="seg">
+    <button data-d="7">هفتگی</button><button data-d="30" class="sel">ماهانه</button><button data-d="183">شش‌ماهه</button><button data-d="365">سالانه</button>
+  </div>
+  <div class="sum3" id="repSum"></div>
+  <div class="tbl"><table><thead><tr><th>تاریخ</th><th>شرح</th><th>دسته</th><th>مبلغ</th></tr></thead><tbody id="repRows"></tbody></table></div>
+  <div class="btns">
+    <button class="btn" id="expShare">💾 ذخیره / اشتراک CSV</button>
+    <button class="btn sec" id="expCopy">📋 کپی متن</button>
+    <button class="btn sec" id="expPrint">🖨 چاپ / PDF</button>
+  </div>
+</div></div>
+
+<div class="modal" id="m-set"><div class="sheet">
+  <h2>تنظیمات <button class="x" data-close>✕</button></h2>
+  <div class="fld"><label>آستانه‌ی قرمز شدن پس‌زمینه (تومان)</label><input id="setThr" type="number" inputmode="numeric"></div>
+  <div class="sw"><span>عدد کوچک بدون واحد = هزار تومان<br><small style="color:var(--muted)">مثلاً «پنجاه تومن» یعنی ۵۰٬۰۰۰</small></span><input type="checkbox" id="setSmall"></div>
+  <div class="sw"><span>مبلغ پیامک‌های بانکی به «ریال» است</span><input type="checkbox" id="setRial"></div>
+  <div class="sw"><span>روشن ماندن صفحه هنگام گوش دادن</span><input type="checkbox" id="setWake"></div>
+  <div class="btns" style="margin-top:12px"><button class="btn" id="setSave">ذخیره</button><button class="btn red" id="setReset">پاک کردن همه‌ی داده‌ها</button></div>
+</div></div>
+
+<div class="modal" id="m-edit"><div class="sheet">
+  <h2>ویرایش ردیف <button class="x" data-close>✕</button></h2>
+  <div class="fld"><label>شرح</label><input id="eNote"></div>
+  <div class="fld"><label>مبلغ (تومان)</label><input id="eAmt" type="number" inputmode="numeric"></div>
+  <div class="fld"><label>نوع</label><select id="eType"><option value="out">هزینه / برداشت</option><option value="in">درآمد / واریز</option></select></div>
+  <div class="fld"><label>دسته</label><select id="eCat"></select></div>
+  <div class="btns"><button class="btn" id="eSave">ذخیره</button><button class="btn sec" id="eMic">🎤 بگو بابت چی</button><button class="btn red" id="eDel">حذف</button></div>
+</div></div>
+
+<div class="modal" id="m-help"><div class="sheet">
+  <h2>مشکل میکروفون <button class="x" data-close>✕</button></h2>
+  <div class="note" id="helpTxt" style="font-size:13px"></div>
+  <div class="btns"><button class="btn" data-close>باشه</button></div>
+</div></div>
+
+<script>
+(function(){
+'use strict';
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const fa=n=>Number(n).toLocaleString('fa-IR');
+const fmt=n=>fa(Math.round(n));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DAY=864e5;
+const short=n=>{n=Math.round(n);if(n>=1e6)return fa((n/1e6).toFixed(1).replace(/\.0$/,''))+'م';if(n>=1e3)return fa(Math.round(n/1e3))+'هـ';return fa(n)};
+const dFa=(ts,full)=>new Intl.DateTimeFormat('fa-IR-u-ca-persian',full?{year:'numeric',month:'2-digit',day:'2-digit'}:{month:'short',day:'numeric'}).format(new Date(ts));
+const startOfDay=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
+
+/* ---------- state ---------- */
+const KEY='voice-accountant-v1';
+let S={entries:[],initial:0,bg:0,smsOn:false,smsRial:true,small:true,thr:5000000,wake:true,seen:[]};
+try{const raw=localStorage.getItem(KEY);if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
+let pendingId=null;
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+/* ---------- backgrounds (20) ---------- */
+const BG=[
+['شفق','#0f2027','#2c5364','mountains'],['اقیانوس','#023e8a','#0096c7','waves'],['جنگل','#12372a','#40916c','mountains'],['غروب','#41295a','#e4572e','waves'],
+['کهکشان','#0b0b2b','#4a2a7a','stars'],['نعنا','#0b525b','#3aa6a0','circles'],['یاقوت','#4a0d2b','#c1315b','circles'],['بنفشه','#2d1b69','#7b4bd1','waves'],
+['صحرا','#5c3b1e','#d08a3c','mountains'],['یخ','#1d3f6e','#6fa8dc','mountains'],['گل‌سرخ','#5a1a2c','#e0607e','circles'],['شب تهران','#0a1128','#1c3b78','stars'],
+['زمرد','#064e3b','#10b981','waves'],['طلوع','#7a2e3a','#f2994a','mountains'],['اطلسی','#3a1c71','#d76d77','waves'],['آتشفشان','#2b0f0f','#c0392b','mountains'],
+['دریاچه','#134e5e','#71b280','waves'],['پاییز','#5b2c0f','#c9742c','circles'],['نیلی','#10214b','#3b5fc0','stars'],['ابر','#2c3e50','#7f93a8','circles']
+];
+function rnd(seed){let s=seed;return()=>{s=(s*16807)%2147483647;return s/2147483647}}
+function svgFor(type,i){
+  const w='fill="#fff"'; let b='';
+  if(type==='mountains'){
+    b+=`<path d="M0 800V540L80 450L150 530L250 400L340 510L400 470V800Z" ${w} fill-opacity=".07"/>`;
+    b+=`<path d="M0 800V620L100 540L190 620L280 520L400 610V800Z" ${w} fill-opacity=".10"/>`;
+    b+=`<path d="M0 800V700L120 650L220 710L320 640L400 690V800Z" ${w} fill-opacity=".15"/>`;
+  }else if(type==='waves'){
+    [560,630,700].forEach((y,k)=>{b+=`<path d="M0 ${y} Q100 ${y-45} 200 ${y} T400 ${y} V800H0Z" ${w} fill-opacity="${.06+k*.04}"/>`});
+  }else if(type==='stars'){
+    const r=rnd(i*97+13);for(let k=0;k<70;k++){b+=`<circle cx="${(r()*400).toFixed(0)}" cy="${(r()*620).toFixed(0)}" r="${(r()*1.8+.4).toFixed(1)}" ${w} fill-opacity="${(r()*.6+.2).toFixed(2)}"/>`}
+    b+=`<circle cx="320" cy="110" r="34" ${w} fill-opacity=".14"/>`;
+  }else{
+    const r=rnd(i*53+7);for(let k=0;k<6;k++){b+=`<circle cx="${(r()*400).toFixed(0)}" cy="${(r()*800).toFixed(0)}" r="${(60+r()*130).toFixed(0)}" ${w} fill-opacity="${(.04+r()*.06).toFixed(2)}"/>`}
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 800" preserveAspectRatio="xMidYMax slice">${b}</svg>`;
+}
+function bgCss(i){const [,c1,c2,t]=BG[i];return `url("data:image/svg+xml,${encodeURIComponent(svgFor(t,i))}") center bottom/cover no-repeat, radial-gradient(circle at 80% 8%, rgba(255,255,255,.2), transparent 45%), linear-gradient(160deg,${c1},${c2})`}
+function applyBg(){$('#bg').style.background=bgCss(S.bg);}
+function buildBgGrid(){
+  $('#bgs').innerHTML='';
+  BG.forEach((b,i)=>{const el=document.createElement('button');el.style.background=bgCss(i);el.textContent=b[0];if(i===S.bg)el.className='sel';
+    el.onclick=()=>{S.bg=i;save();applyBg();buildBgGrid()};$('#bgs').appendChild(el)});
+}
+
+/* ---------- clock ---------- */
+function tick(){
+  const n=new Date();
+  $('#clk').textContent=new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(n);
+  $('#clkd').textContent=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{weekday:'long',day:'numeric',month:'long'}).format(n);
+}
+setInterval(tick,1000);tick();
+
+/* ---------- categories ---------- */
+const CAT_OUT={
+ 'خوراک':'ناهار شام صبحانه غذا رستوران نون نان میوه سبزی گوشت مرغ برنج کافه قهوه چای پیتزا ساندویچ سوپر نوشیدنی بستنی فست‌فود فستفود کباب پنیر شیر تخم',
+ 'حمل‌ونقل':'تاکسی اسنپ تپسی بنزین مترو اتوبوس کرایه پارکینگ عوارض ماشین سرویس بلیط اتوبان',
+ 'قبوض':'قبض برق گاز آب اینترنت شارژ تلفن موبایل بسته',
+ 'مسکن':'اجاره رهن مسکن ودیعه',
+ 'خرید':'لباس کفش خرید کیف پوشانک لوازم',
+ 'سلامت':'دکتر دارو داروخانه درمان بیمارستان ویزیت آزمایش دندان',
+ 'تفریح':'سینما فیلم بازی سفر کافی‌نت تفریح کنسرت پارک',
+ 'آموزش':'کتاب کلاس دوره شهریه آموزش کلاس‌ها',
+ 'هدیه و کمک':'هدیه صدقه کمک خیریه نذری',
+};
+const CAT_IN={'حقوق':'حقوق دستمزد','فروش':'فروش فروختم','هدیه/عیدی':'عیدی هدیه پاداش'};
+const CAT_COL={'خوراک':'#ffb347','حمل‌ونقل':'#5dd6ff','قبوض':'#ffe066','مسکن':'#b794ff','خرید':'#ff8fc7','سلامت':'#7df0b0','تفریح':'#ff9d6c','آموزش':'#8ab4ff','هدیه و کمک':'#f28fff','سایر':'#c3c8e6','بدون شرح':'#9aa0c4','حقوق':'#7df0b0','فروش':'#7df0b0','هدیه/عیدی':'#7df0b0','واریز':'#7df0b0'};
+const ALL_CATS=[...Object.keys(CAT_OUT),'سایر','بدون شرح',...Object.keys(CAT_IN),'واریز'];
+function guessCat(words,type){
+  const t=' '+words+' ';
+  const map=type==='in'?CAT_IN:CAT_OUT;
+  for(const c in map){for(const k of map[c].split(' ')){if(k&&t.includes(k))return c}}
+  return type==='in'?'سایر':'سایر';
+}
+
+/* ---------- number parsing (Persian) ---------- */
+const NUM=new Map(Object.entries({
+ 'صفر':0,'یک':1,'یه':1,'دو':2,'سه':3,'چهار':4,'پنج':5,'شش':6,'شیش':6,'هفت':7,'هشت':8,'نه':9,'ده':10,'یازده':11,'دوازده':12,'سیزده':13,'چهارده':14,'پانزده':15,'پونزده':15,'شانزده':16,'شونزده':16,'هفده':17,'هجده':18,'نوزده':19,
+ 'بیست':20,'سی':30,'چهل':40,'پنجاه':50,'شصت':60,'هفتاد':70,'هشتاد':80,'نود':90,
+ 'صد':100,'یکصد':100,'دویست':200,'سیصد':300,'چهارصد':400,'پانصد':500,'پونصد':500,'ششصد':600,'هفتصد':700,'هشتصد':800,'نهصد':900}));
+const MULT=new Map(Object.entries({'هزار':1e3,'میلیون':1e6,'ملیون':1e6,'میلیارد':1e9,'بیلیون':1e9}));
+const UNIT_T=new Set(['تومان','تومن','تومانی','تومنی','تومانه','تومنه']);
+const UNIT_R=new Set(['ریال','ریالی']);
+const DIG=/^\d+(\.\d+)?$/;
+const isNum=t=>t!==undefined&&(DIG.test(t)||NUM.has(t)||MULT.has(t));
+const isStart=t=>DIG.test(t)||NUM.has(t)||MULT.has(t);
+
+function norm(s){
+  s=String(s).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/[\u200c\u200f\u200e\u064b-\u065f]/g,' ').replace(/٬/g,',').replace(/٫/g,'.');
+  let p;do{p=s;s=s.replace(/(\d)[,،](\d{3})(?!\d)/g,'$1$2')}while(p!==s);
+  s=s.replace(/(\d)\.(\d)/g,'$1§$2').replace(/[.،,؛;!؟?:\n]+/g,' | ').replace(/§/g,'.');
+  return s.replace(/\s+/g,' ').trim();
+}
+function scan(tokens){
+  const spans=[];let i=0;
+  while(i<tokens.length){
+    if(!isStart(tokens[i])){i++;continue}
+    let j=i,total=0,cur=0,lastM=0,strong=false,any=false;
+    while(j<tokens.length){
+      const x=tokens[j];
+      if(DIG.test(x)){cur+=parseFloat(x);strong=true;any=true;j++}
+      else if(NUM.has(x)){cur+=NUM.get(x);any=true;j++}
+      else if(MULT.has(x)){if(cur===0)cur=1;total+=cur*MULT.get(x);cur=0;lastM=MULT.get(x);strong=true;any=true;j++}
+      else if(x==='نیم'&&any){if(MULT.has(tokens[j+1]))cur+=.5;else if(lastM)total+=lastM/2;else cur+=.5;j++}
+      else if(x==='و'&&any&&(isNum(tokens[j+1])||tokens[j+1]==='نیم')){j++}
+      else break;
+    }
+    let value=total+cur;
+    if(cur>0&&total>0&&lastM>=1e6&&cur<1000)value=total+cur*(lastM/1000);
+    let unit=null;
+    if(UNIT_T.has(tokens[j])){unit='t';j++}else if(UNIT_R.has(tokens[j])){unit='r';j++}
+    const valid=value>0&&(strong||unit||value>=100);
+    if(!valid){i=Math.max(j,i+1);continue}
+    if(unit==='r')value=value/10;
+    else if(S.small&&!lastM&&value<1000)value*=1000;
+    spans.push({start:i,end:j,value:Math.round(value)});
+    i=j;
+  }
+  return spans;
+}
+const INC=/حقوق|دستمزد|درآمد|درامد|واریز|پاداش|عیدی|فروختم|فروش|سود|دریافت|وصول|اضافه|پس گرفتم|هدیه گرفتم|دریافتی/;
+const EXP=/خرج|هزینه|خریدم|پرداخت|دادم|برداشت|کسر|پرداختی|خرید/;
+const FILL=new Set(['امروز','دیروز','پریروز','الان','من','یه','یک','برای','بابت','به','رو','را','که','ثبت','کن','کنید','لطفا','هزینه','خرج','درآمد','درامد','و','در','از','با','اینم','این','هم','تا','بعد','بعدش','همچنین','ضمنا','|']);
+const VERBS=new Set(['دادم','کردم','شد','بود','پرداخت','خرج','گرفتم','خریدم','رو','را','هم','و','بعد','بعدش','همچنین','اینم','ضمنا','شده','دریافت','کن','تومان','تومن','|']);
+function clean(words){return words.filter(w=>w!=='|'&&!FILL.has(w)&&!VERBS.has(w)&&!UNIT_T.has(w)&&!UNIT_R.has(w)&&!MULT.has(w)&&!NUM.has(w)&&!DIG.test(w)).join(' ').trim()}
+
+function parseUtterance(raw){
+  const text=norm(raw);const tokens=text.split(' ').filter(Boolean);
+  const out={text,tokens,spans:scan(tokens),entries:[]};
+  const sp=out.spans;if(!sp.length)return out;
+  const g=[tokens.slice(0,sp[0].start)];
+  for(let k=1;k<sp.length;k++)g.push(tokens.slice(sp[k-1].end,sp[k].start));
+  g.push(tokens.slice(sp[sp.length-1].end));
+  const before=g[0].some(w=>!FILL.has(w));
+  const seg=sp.map(()=>[]);
+  const n=sp.length;
+  if(before){
+    seg[0].push(...g[0]);
+    for(let k=1;k<n;k++){
+      let gap=g[k].slice();
+      const bar=gap.indexOf('|');
+      if(bar>=0){seg[k-1].push(...gap.slice(0,bar));seg[k].push(...gap.slice(bar+1));continue}
+      let lead=[];while(gap.length&&VERBS.has(gap[0]))lead.push(gap.shift());
+      seg[k-1].push(...lead);seg[k].push(...gap);
+    }
+    seg[n-1].push(...g[n]);
+  }else{
+    seg[0].push(...g[0]);
+    for(let k=1;k<=n;k++){
+      const gap=g[k];
+      if(k===n){seg[n-1].push(...gap);continue}
+      const bar=gap.indexOf('|');
+      if(bar>=0){seg[k-1].push(...gap.slice(0,bar));seg[k].push(...gap.slice(bar+1))}
+      else seg[k-1].push(...gap);
+    }
+  }
+  const off=/پریروز/.test(text)?2:/دیروز/.test(text)?1:0;
+  sp.forEach((s,k)=>{
+    const joined=' '+seg[k].join(' ')+' ';
+    let type='out';
+    if(INC.test(joined)&&!EXP.test(joined))type='in';
+    const note=clean(seg[k]);
+    const cat=note?guessCat(joined,type):(type==='in'?'سایر':'بدون شرح');
+    out.entries.push({id:uid(),ts:Date.now()-off*DAY+k,type,amount:s.value,cat,note,src:'voice',pending:false});
+  });
+  return out;
+}
+
+/* ---------- totals / render ---------- */
+function balance(){let b=S.initial;for(const e of S.entries)b+=e.type==='in'?e.amount:-e.amount;return b}
+function sumRange(a,b,type){let t=0;for(const e of S.entries)if(e.type===type&&e.ts>=a&&e.ts<b)t+=e.amount;return t}
+function render(){
+  const b=balance();
+  $('#bal').innerHTML=`${fmt(b)} <small>تومان</small>`;
+  $('#init').textContent=fmt(S.initial);
+  document.body.classList.toggle('low',b<S.thr);
+  $('#lowmsg').textContent=`⚠️ موجودی کمتر از ${fmt(S.thr)} تومان است`;
+  const now=new Date(),d0=startOfDay(now),m0=new Date(now.getFullYear(),now.getMonth(),1).getTime();
+  // Jalali month start for "this month"
+  const jm=jalaliMonthStart(now);
+  $('#sToday').textContent=fmt(sumRange(d0,d0+DAY,'out'));
+  $('#sMonthOut').textContent=fmt(sumRange(jm,Infinity,'out'));
+  $('#sMonthIn').textContent=fmt(sumRange(jm,Infinity,'in'));
+  $('#smsSt').textContent=S.smsOn?'وصل':'قطع';$('#bSms').classList.toggle('on',S.smsOn);
+  renderChart();renderCats(jm);renderRows();renderPend();
+}
+function jalaliMonthStart(now){
+  const parts=new Intl.DateTimeFormat('en-u-ca-persian',{day:'numeric'}).formatToParts(now);
+  const day=parseInt(parts.find(p=>p.type==='day').value,10);
+  return startOfDay(now)-(day-1)*DAY;
+}
+function renderChart(){
+  const d0=startOfDay(Date.now());const days=[];for(let i=6;i>=0;i--)days.push(d0-i*DAY);
+  const sums=days.map(t=>sumRange(t,t+DAY,'out')),max=Math.max(...sums,1);
+  let s='';
+  days.forEach((t,i)=>{
+    const h=Math.round(sums[i]/max*80),x=14+i*45,y=104-h;
+    const last=i===6;
+    s+=`<rect x="${x}" y="${y}" width="30" height="${Math.max(h,2)}" rx="7" fill="${last?'#ffb347':'#8ab4ff'}" fill-opacity="${last?.95:.75}"/>`;
+    if(sums[i]>0)s+=`<text x="${x+15}" y="${y-5}" text-anchor="middle" font-size="10" fill="#f6f7ff">${short(sums[i])}</text>`;
+    s+=`<text x="${x+15}" y="124" text-anchor="middle" font-size="10" fill="#c3c8e6">${new Intl.DateTimeFormat('fa-IR',{weekday:'short'}).format(new Date(t))}</text>`;
+  });
+  $('#chart').innerHTML=s;
+}
+function renderCats(from){
+  const m={};let tot=0;
+  for(const e of S.entries)if(e.type==='out'&&e.ts>=from){m[e.cat]=(m[e.cat]||0)+e.amount;tot+=e.amount}
+  const arr=Object.entries(m).sort((a,b)=>b[1]-a[1]);
+  $('#cats').innerHTML=arr.length?arr.map(([c,v])=>`<div class="bar"><span>${esc(c)}</span><i style="width:${Math.max(4,v/arr[0][1]*100)}%;background:${CAT_COL[c]||'#c3c8e6'}"></i><span>${fmt(v)}</span></div>`).join(''):'<div class="empty" style="padding:6px">هنوز هزینه‌ای در این ماه ثبت نشده</div>';
+}
+function renderRows(){
+  const asc=[...S.entries].sort((a,b)=>a.ts-b.ts);let run=S.initial;
+  const list=asc.map((e,i)=>{run+=e.type==='in'?e.amount:-e.amount;return Object.assign({},e,{n:i+1,run})}).reverse();
+  const q=norm($('#search').value||'').replace(/\|/g,' ').trim();
+  const f=q?list.filter(e=>{const hay=norm([e.note,e.cat,e.amount,fmt(e.amount),dFa(e.ts,true),dFa(e.ts),e.type==='in'?'درآمد واریز':'هزینه برداشت'].join(' '));return q.split(' ').every(w=>hay.includes(w))}):list.slice(0,300);
+  $('#empty').style.display=list.length?'none':'block';
+  $('#rows').innerHTML=f.map(e=>`<tr class="row" data-id="${e.id}"><td>${fa(e.n)}</td><td>${dFa(e.ts)}</td><td>${e.note?esc(e.note):(e.pending?'<span class="q">؟ بابت چی بود</span>':'<span style="color:var(--muted)">—</span>')}${e.src==='sms'?' 📩':''}</td><td><span class="cat" style="color:${CAT_COL[e.cat]||'#fff'}">${esc(e.cat)}</span></td><td class="amt ${e.type}">${e.type==='in'?'+':'−'}${fmt(e.amount)}</td><td style="color:var(--muted)">${fmt(e.run)}</td></tr>`).join('');
+  if(q&&!f.length)$('#rows').innerHTML='<tr><td colspan="6" class="empty">چیزی پیدا نشد</td></tr>';
+}
+function renderPend(){
+  const e=S.entries.find(x=>x.id===pendingId);
+  if(!e){pendingId=null;$('#pend').classList.remove('show');return}
+  $('#pendTxt').innerHTML=`${e.type==='in'?'واریز':'برداشت'} <b>${fmt(e.amount)}</b> تومان ثبت شد — <b>بابت چی بود؟</b> بگو (یا خالی بگذار).`;
+  $('#pend').classList.add('show');
+}
+
+/* ---------- toast ---------- */
+let toastT=null;
+function toast(msg,btn,fn){
+  $('#toastTxt').textContent=msg;const b=$('#toastBtn');
+  if(btn){b.style.display='';b.textContent=btn;b.onclick=()=>{fn&&fn();hideToast()}}else b.style.display='none';
+  $('#toast').classList.add('show');clearTimeout(toastT);toastT=setTimeout(hideToast,btn?7000:3500);
+}
+function hideToast(){$('#toast').classList.remove('show')}
+
+/* ---------- actions ---------- */
+function addEntries(list){
+  list.forEach(e=>S.entries.push(e));save();render();
+}
+function handleText(raw){
+  raw=(raw||'').trim();if(!raw)return;
+  const t=norm(raw);
+  setTranscript(raw,true);
+  // delete last
+  if(/(حذف|پاک|برگردون|کنسل).{0,8}(آخرین|آخری|آخر)/.test(t)||/(آخرین|آخری).{0,10}(حذف|پاک)/.test(t)){
+    if(!S.entries.length){toast('چیزی برای حذف نیست');return}
+    const last=S.entries.reduce((a,b)=>b.ts>=a.ts?b:a);
+    S.entries=S.entries.filter(e=>e!==last);save();render();toast(`حذف شد: ${fmt(last.amount)} تومان ${last.note||last.cat}`);return;
+  }
+  const p=parseUtterance(raw);
+  // balance commands
+  if(/موجودی/.test(t)&&p.spans.length){
+    const v=p.spans[0].value;
+    if(/اولیه/.test(t)){S.initial=v;save();render();toast(`موجودی اولیه: ${fmt(v)} تومان`);return}
+    const flow=balance()-S.initial;S.initial=v-flow;save();render();toast(`موجودی کل روی ${fmt(v)} تومان تنظیم شد`);return;
+  }
+  if(!p.entries.length){
+    const e=S.entries.find(x=>x.id===pendingId);
+    if(e){
+      const note=clean(p.tokens);
+      if(note){e.note=note;e.cat=guessCat(' '+p.text+' ',e.type);e.pending=false;pendingId=null;save();render();toast(`ثبت شد: ${note}`);return}
+    }
+    toast('عددی نشنیدم؛ مثلاً بگو «ناهار صد هزار تومان»');return;
+  }
+  addEntries(p.entries);
+  const ids=p.entries.map(e=>e.id);
+  toast(p.entries.map(e=>`${e.type==='in'?'＋':'－'}${fmt(e.amount)} ${e.note||e.cat}`).join(' | '),'↩ لغو',()=>{S.entries=S.entries.filter(e=>!ids.includes(e.id));save();render()});
+}
+
+/* ---------- bank SMS ---------- */
+function parseSms(raw){
+  let t=norm(raw).replace(/\|/g,' ');
+  const nums=[...raw.matchAll(/[\d۰-۹٠-٩][\d۰-۹٠-٩,٬،.]*/g)];
+  t=String(raw).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[٬،]/g,',');
+  let body=t.replace(/(مانده|موجودی)[^\d]{0,15}[\d,.]+/g,' ');
+  let type=null;
+  const hasW=/برداشت|خرید|پرداخت|انتقال از|کسر|انتقال\s*ازحساب|-\s*[\d,]{4,}/.test(body);
+  const hasD=/واریز|دریافت|افزایش|\+\s*[\d,]{4,}|انتقال به حساب شما|سپرده/.test(body);
+  if(hasW&&!hasD)type='out';else if(hasD&&!hasW)type='in';
+  else if(hasW&&hasD){type=body.search(/واریز|دریافت|\+/)<body.search(/برداشت|خرید|پرداخت|کسر|-/)?'in':'out'}
+  if(!type)return null;
+  let m=body.match(/(?:برداشت|واریز|مبلغ|خرید|پرداخت|انتقال|کسر|دریافت)[^\d\-+]{0,14}[-+]?\s*(\d[\d,]*)/);
+  if(!m)m=body.match(/[-+]\s*(\d[\d,]{3,})/);
+  if(!m)m=body.match(/(\d[\d,]{3,})/);
+  if(!m)return null;
+  let v=parseInt(m[1].replace(/,/g,''),10);if(!(v>0))return null;
+  if(S.smsRial)v=Math.round(v/10);
+  return {type,amount:v};
+}
+function hash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return String(h)}
+function addSms(raw,quiet){
+  const h=hash(String(raw).replace(/\s+/g,''));
+  if(S.seen.includes(h)){if(!quiet)toast('این پیامک قبلاً ثبت شده');return false}
+  const r=parseSms(raw);
+  if(!r){if(!quiet)toast('پیامک بانکی تشخیص داده نشد');return false}
+  S.seen.push(h);S.seen=S.seen.slice(-200);
+  const e={id:uid(),ts:Date.now(),type:r.type,amount:r.amount,cat:r.type==='in'?'واریز':'بدون شرح',note:'',src:'sms',pending:r.type==='out'};
+  S.entries.push(e);if(r.type==='out')pendingId=e.id;save();render();
+  toast(`${r.type==='in'?'واریز':'برداشت'} ${fmt(r.amount)} تومان از پیامک ثبت شد`);
+  return true;
+}
+function looksBank(t){return t&&t.length<700&&/(برداشت|واریز|مانده|مبلغ|بانک|کارت|پرداخت)/.test(t)&&/[\d۰-۹]{4,}|[\d۰-۹],[\d۰-۹]{3}/.test(t)}
+async function readClip(){
+  if(!S.smsOn||!navigator.clipboard||!navigator.clipboard.readText)return;
+  try{const t=await navigator.clipboard.readText();if(looksBank(t))addSms(t,true)}catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)readClip()});
+window.addEventListener('focus',readClip);
+
+/* ---------- speech recognition ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,listening=false,mode='entry',fastEnds=0,lastStart=0,wakeLock=null,onceCb=null;
+function setTranscript(txt,fin){$('#trTxt').innerHTML=`<span class="${fin?'fin':'live'}">${txt?'«'+esc(txt)+'»':'…'}</span>`}
+function setMicUi(){const m=$('#mic');m.classList.toggle('on',listening);m.textContent=listening?'⏹':'🎤';
+  if(listening&&!$('#trTxt').textContent.trim().startsWith('«'))$('#trTxt').innerHTML='<span class="live">در حال گوش دادن… بگو</span>';}
+function help(msg){$('#helpTxt').innerHTML=msg;openM('m-help')}
+function micError(code){
+  const tips='<br><br><b>راه‌حل:</b><br>۱) در کروم، آیکن قفل کنار آدرس ← «مجوزها» ← میکروفون را «مجاز» کن.<br>۲) اگر این صفحه داخل برنامه‌ی دیگری یا قاب باز شده، لینک را مستقیم در <b>Google Chrome</b> باز کن.<br>۳) اینترنت باید وصل باشد (تشخیص گفتار فارسی کروم آنلاین است).<br>۴) در تنظیمات اندروید ← برنامه‌ها ← Chrome ← مجوزها ← میکروفون: «مجاز».';
+  const map={'not-allowed':'دسترسی به میکروفون داده نشده است.','NotAllowedError':'دسترسی به میکروفون داده نشده است.','service-not-allowed':'سرویس تشخیص گفتار اجازه‌ی اجرا ندارد.','PermissionDeniedError':'دسترسی به میکروفون داده نشده است.','audio-capture':'میکروفونی پیدا نشد یا در اختیار برنامه‌ی دیگری است.','NotFoundError':'میکروفونی پیدا نشد.','NotReadableError':'میکروفون در اختیار برنامه‌ی دیگری است.','network':'اتصال اینترنت برقرار نیست؛ تشخیص گفتار به اینترنت نیاز دارد.','language-not-supported':'زبان فارسی روی این دستگاه پشتیبانی نمی‌شود.','unsupported':'این مرورگر تشخیص گفتار ندارد. لطفاً از Google Chrome اندروید استفاده کن.','insecure':'میکروفون فقط روی آدرس امن (https) کار می‌کند.'};
+  help((map[code]||('خطای میکروفون: '+esc(code)))+tips);
+}
+async function acquireWake(){
+  try{if(S.wake&&navigator.wakeLock&&!wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null})}}catch(e){}
+}
+function releaseWake(){try{wakeLock&&wakeLock.release()}catch(e){}wakeLock=null}
+async function startListening(m,cb){
+  if(listening)stopListening();
+  if(!SR){micError('unsupported');return}
+  if(window.isSecureContext===false){micError('insecure');return}
+  mode=m||'entry';onceCb=cb||null;
+  try{
+    if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+      const st=await navigator.mediaDevices.getUserMedia({audio:true});st.getTracks().forEach(t=>t.stop());
+    }
+  }catch(e){micError(e&&e.name||'not-allowed');return}
+  listening=true;fastEnds=0;setMicUi();acquireWake();spawn();
+}
+function stopListening(){
+  listening=false;onceCb=null;try{rec&&(rec.onend=null,rec.abort())}catch(e){}rec=null;setMicUi();releaseWake();
+}
+function spawn(){
+  if(!listening)return;
+  try{
+    rec=new SR();rec.lang='fa-IR';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
+    lastStart=Date.now();
+    rec.onresult=ev=>{
+      let fin='',live='';
+      for(let i=ev.resultIndex;i<ev.results.length;i++){const r=ev.results[i];if(r.isFinal)fin+=r[0].transcript+' ';else live+=r[0].transcript}
+      if(fin.trim()){
+        const txt=fin.trim();
+        if(mode==='once'){const cb=onceCb;stopListening();cb&&cb(txt)}else handleText(txt);
+      }else setTranscript(live,false);
+    };
+    rec.onerror=ev=>{
+      const c=ev.error;
+      if(c==='no-speech'||c==='aborted')return;
+      if(c==='not-allowed'||c==='service-not-allowed'||c==='audio-capture'||c==='network'||c==='language-not-supported'){stopListening();micError(c)}
+    };
+    rec.onend=()=>{
+      if(!listening)return;
+      if(Date.now()-lastStart<700){fastEnds++;if(fastEnds>6){stopListening();help('میکروفون مدام قطع می‌شود. مطمئن شو برنامه‌ی دیگری از میکروفون استفاده نمی‌کند و اینترنت وصل است، سپس دوباره امتحان کن.');return}}else fastEnds=0;
+      if(mode==='once'&&!onceCb){stopListening();return}
+      setTimeout(spawn,200);
+    };
+    rec.start();
+  }catch(e){stopListening();micError(e&&e.name||'audio-capture')}
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){if(listening)stopListening()}});
+
+/* ---------- export ---------- */
+let repDays=30;
+function repList(){const from=Date.now()-repDays*DAY;return S.entries.filter(e=>e.ts>=from).sort((a,b)=>b.ts-a.ts)}
+function renderRep(){
+  const l=repList();let i=0,o=0;l.forEach(e=>e.type==='in'?i+=e.amount:o+=e.amount);
+  $('#repSum').innerHTML=`<div class="stat"><span>درآمد</span><b style="color:var(--in)">${fmt(i)}</b></div><div class="stat"><span>هزینه</span><b style="color:var(--out)">${fmt(o)}</b></div><div class="stat"><span>خالص</span><b>${fmt(i-o)}</b></div>`;
+  $('#repRows').innerHTML=l.length?l.map(e=>`<tr><td>${dFa(e.ts,true)}</td><td>${esc(e.note||'—')}</td><td>${esc(e.cat)}</td><td class="amt ${e.type}">${e.type==='in'?'+':'−'}${fmt(e.amount)}</td></tr>`).join(''):'<tr><td colspan="4" class="empty">در این بازه ردیفی نیست</td></tr>';
+}
+function csvText(){
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const rows=[['تاریخ','نوع','مبلغ (تومان)','دسته','شرح','منبع']];
+  repList().reverse().forEach(e=>rows.push([dFa(e.ts,true),e.type==='in'?'درآمد':'هزینه',e.amount,e.cat,e.note,e.src==='sms'?'پیامک':'صوتی']));
+  return rows.map(r=>r.map(q).join(',')).join('\r\n');
+}
+async function shareCsv(){
+  const name=`gozaresh-${repDays}d.csv`,csv='\ufeff'+csvText();
+  let file=null;try{file=new File([csv],name,{type:'text/csv'})}catch(e){}
+  try{if(file&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'گزارش حسابداری'});return}}catch(e){if(e&&e.name==='AbortError')return}
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=name;document.body.appendChild(a);a.click();a.remove();toast('فایل دانلود شد')}
+  catch(e){copyCsv()}
+}
+async function copyCsv(){
+  try{await navigator.clipboard.writeText(csvText());toast('متن گزارش کپی شد؛ در Excel یا یادداشت بچسبان')}
+  catch(e){const ta=document.createElement('textarea');ta.value=csvText();document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('متن گزارش کپی شد')}catch(_){toast('کپی ممکن نشد')}ta.remove()}
+}
+
+/* ---------- edit ---------- */
+let editId=null;
+function openEdit(id){
+  const e=S.entries.find(x=>x.id===id);if(!e)return;editId=id;
+  $('#eNote').value=e.note;$('#eAmt').value=e.amount;$('#eType').value=e.type;
+  $('#eCat').innerHTML=ALL_CATS.map(c=>`<option ${c===e.cat?'selected':''}>${esc(c)}</option>`).join('');
+  openM('m-edit');
+}
+
+/* ---------- modals ---------- */
+function openM(id){$('#'+id).classList.add('show')}
+function closeM(el){el.classList.remove('show')}
+$$('.modal').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)closeM(m)});m.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeM(m)))});
+
+/* ---------- wire up ---------- */
+$('#mic').onclick=()=>{listening?stopListening():startListening('entry')};
+$('#send').onclick=()=>{const v=$('#typed').value;$('#typed').value='';handleText(v)};
+$('#typed').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#send').click()}});
+$$('#ex button').forEach(b=>b.onclick=()=>handleText(b.textContent));
+$('#search').addEventListener('input',renderRows);
+$('#searchMic').onclick=()=>{startListening('once',txt=>{$('#search').value=txt.replace(/[.،]/g,'');renderRows()});setTranscript('بگو دنبال چی می‌گردی…',false)};
+$('#rows').addEventListener('click',e=>{const tr=e.target.closest('tr.row');if(tr)openEdit(tr.dataset.id)});
+$('#bBg').onclick=()=>{buildBgGrid();openM('m-bg')};
+$('#bSms').onclick=()=>{$('#smsToggle').checked=S.smsOn;openM('m-sms')};
+$('#bExp').onclick=()=>{renderRep();openM('m-exp')};
+$('#bSet').onclick=()=>{$('#setThr').value=S.thr;$('#setSmall').checked=S.small;$('#setRial').checked=S.smsRial;$('#setWake').checked=S.wake;openM('m-set')};
+$('#smsToggle').onchange=e=>{S.smsOn=e.target.checked;save();render();toast(S.smsOn?'اتصال پیامک وصل شد':'اتصال پیامک قطع شد');if(S.smsOn)readClip()};
+$('#smsAdd').onclick=()=>{const t=$('#smsText').value;if(addSms(t)){$('#smsText').value='';closeM($('#m-sms'))}};
+$('#smsPaste').onclick=async()=>{try{const t=await navigator.clipboard.readText();$('#smsText').value=t}catch(e){toast('اجازه‌ی دسترسی به کلیپ‌بورد داده نشد؛ دستی بچسبان')}};
+$$('#seg button').forEach(b=>b.onclick=()=>{repDays=+b.dataset.d;$$('#seg button').forEach(x=>x.classList.toggle('sel',x===b));renderRep()});
+$('#expShare').onclick=shareCsv;$('#expCopy').onclick=copyCsv;$('#expPrint').onclick=()=>{try{window.print()}catch(e){toast('چاپ در این محیط ممکن نیست؛ CSV بگیر')}};
+$('#setSave').onclick=()=>{S.thr=Math.max(0,+$('#setThr').value||0);S.small=$('#setSmall').checked;S.smsRial=$('#setRial').checked;S.wake=$('#setWake').checked;save();render();closeM($('#m-set'));toast('ذخیره شد')};
+$('#setReset').onclick=()=>{if(confirm('همه‌ی داده‌ها پاک شود؟')){const keep={bg:S.bg};S={entries:[],initial:0,bg:keep.bg,smsOn:false,smsRial:true,small:true,thr:5000000,wake:true,seen:[]};pendingId=null;save();render();closeM($('#m-set'))}};
+$('#editInit').onclick=e=>{e.preventDefault();const v=prompt('موجودی اولیه (تومان):',S.initial);if(v!==null){const n=parseInt(norm(v).replace(/\D/g,''),10);if(!isNaN(n)){S.initial=n;save();render()}}};
+$('#eSave').onclick=()=>{const e=S.entries.find(x=>x.id===editId);if(!e)return;e.note=$('#eNote').value.trim();e.amount=Math.max(0,Math.round(+$('#eAmt').value||0));e.type=$('#eType').value;e.cat=$('#eCat').value;if(e.note)e.pending=false;save();render();closeM($('#m-edit'))};
+$('#eDel').onclick=()=>{S.entries=S.entries.filter(x=>x.id!==editId);save();render();closeM($('#m-edit'))};
+$('#eMic').onclick=()=>{pendingId=editId;const e=S.entries.find(x=>x.id===editId);if(e)e.pending=true;save();closeM($('#m-edit'));render();startListening('entry')};
+$('#pendMic').onclick=()=>{startListening('entry')};
+$('#pendSkip').onclick=()=>{const e=S.entries.find(x=>x.id===pendingId);if(e)e.pending=false;pendingId=null;save();render()};
+
+applyBg();render();
+})();
+</script>
+</body>
+</html>
